@@ -14,8 +14,6 @@ import (
 
 var WebScraper interfaces.WebScraper = services.NewWebScraper()
 
-//the classify method gets an image and returns the labels for
-//the given image
 func Scrape(w http.ResponseWriter, r *http.Request) {
 
 	url := r.URL.Query().Get("url")
@@ -38,6 +36,11 @@ func Scrape(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, err)
 		return
 	}
-	w.Write(res)
-
+	_, err = w.Write(res)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Error("%v", err)
+		_, _ = fmt.Fprint(w, err)
+		return
+	}
 }
