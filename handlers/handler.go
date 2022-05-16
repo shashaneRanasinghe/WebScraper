@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/shashaneRanasinghe/WebScraper/helpers"
 	"net/http"
 
 	"github.com/tryfix/log"
@@ -24,7 +25,9 @@ func Scrape(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	response := WebScraper.Scrape(url)
+
+	helper := helpers.NewWebServiceHelper()
+	response := WebScraper.Scrape(url, helper)
 
 	w.WriteHeader(http.StatusOK)
 	res, err := json.Marshal(response)

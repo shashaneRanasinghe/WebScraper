@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.17-alpine AS build
+##
+## Build
+##
+FROM golang:1.17-alpine3.14 AS build
 
 WORKDIR /app
 
@@ -8,8 +11,7 @@ COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 
-COPY *.go ./
-
+COPY . .
 RUN go build -o /WebScraper
 
 ##
@@ -17,6 +19,6 @@ RUN go build -o /WebScraper
 ##
 
 FROM alpine:3.14.0
+WORKDIR /
 COPY --from=build /WebScraper /WebScraper
-
-ENTRYPOINT ["./Webscraper"]
+ENTRYPOINT ["/WebScraper"]

@@ -1,8 +1,11 @@
 package service_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
+	mock_interfaces "github.com/shashaneRanasinghe/WebScraper/mocks"
+	"github.com/shashaneRanasinghe/WebScraper/models"
 	"github.com/shashaneRanasinghe/WebScraper/services"
 	"github.com/tryfix/log"
 	"io/ioutil"
@@ -27,100 +30,122 @@ func getPageContent() string {
 	return pageContent
 }
 
-func TestFindElementCount_HappyPath(t *testing.T) {
+func TestScrape_HappyPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	elementList := []string{"h1", "h2"}
-	expected := make(map[string]int)
-	expected["h1"] = 1
-	expected["h2"] = 0
+	pageContent := getPageContent()
+
+	url := "https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_input_type_password"
+	expected := models.WebScraperResponse{Error: ""}
 
 	type test struct {
-		pageContent string
-		elementList []string
-		expected    map[string]int
+		URL      string
+		expected models.WebScraperResponse
 	}
 
 	tests := []test{
 		{
-			pageContent: getPageContent(),
-			elementList: elementList,
-			expected:    expected,
+			URL:      url,
+			expected: expected,
 		},
 	}
 
+	searchElementResponse := []string{"title"}
+	elementList := []string{"h1", "h2", "h3", "h4", "h5", "h6"}
+	elementCount := make(map[string]int)
+	elementCount["h1"] = 2
+	urlCount := make(map[string]int)
+	urlCount["internalURL"] = 2
+
+	mockHelper := mock_interfaces.NewMockHelper(ctrl)
 	service := services.NewWebScraper()
 
-	for _, test := range tests {
-		actual := service.FindElementCount(test.pageContent, test.elementList)
-		if test.expected["h1"] != actual["h1"] {
-			fmt.Printf("Expected : %v, Got : %v ", expected, actual)
-			t.Fail()
-		}
-	}
-
-}
-
-func TestGetLinkCount_HappyPath(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	regex := "<title.*?>(.*)</title>"
-	expected := []string{"Tryit Editor v3.7"}
-
-	type test struct {
-		pageContent string
-		regex       string
-		expected    []string
-	}
-
-	tests := []test{
-		{
-			pageContent: getPageContent(),
-			regex:       regex,
-			expected:    expected,
-		},
-	}
-
-	service := services.NewWebScraper()
+	mockHelper.EXPECT().SearchElements(pageContent, "<title.*?>(.*)</title>").Return(searchElementResponse)
+	mockHelper.EXPECT().SearchElements(pageContent, "<input.*type=\"?(password)\"?").Return(searchElementResponse)
+	mockHelper.EXPECT().FindElementCount(pageContent, elementList).Return(elementCount).AnyTimes()
+	mockHelper.EXPECT().GetLinkCount(pageContent, url).Return(urlCount, nil).AnyTimes()
 
 	for _, test := range tests {
-		actual := service.SearchElements(test.pageContent, test.regex)
-		if len(test.expected) != len(actual) {
-			fmt.Printf("Expected : %v, Got : %v ", expected, actual)
+		actual := service.Scrape(test.URL, mockHelper)
+		if test.expected.Error != actual.Error {
+			fmt.Printf("Expected : %v, Got : %v ", expected.Error, actual.Error)
 			t.Fail()
 		}
 	}
 }
 
-func TestSearchElements_HappyPath(t *testing.T) {
+func TestScrape_ErrorPath_GetLinks(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	regex := "<a.*href=\"(.*?)\""
-	expected := 10 //[]string{"https://www.w3schools.com/"}
+	pageContent := getPageContent()
+
+	url := "https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_input_type_password"
+	getLinkErr := errors.New("invalid URL provided")
+	expected := models.WebScraperResponse{Error: "Error while getting the Link Count"}
 
 	type test struct {
-		pageContent string
-		regex       string
-		expected    int //[]string
+		URL      string
+		expected models.WebScraperResponse
 	}
 
 	tests := []test{
 		{
-			pageContent: getPageContent(),
-			regex:       regex,
-			expected:    expected,
+			URL:      url,
+			expected: expected,
 		},
 	}
 
+	searchElementResponse := []string{"title"}
+	elementList := []string{"h1", "h2", "h3", "h4", "h5", "h6"}
+	elementCount := make(map[string]int)
+	elementCount["h1"] = 2
+	urlCount := make(map[string]int)
+	urlCount["internalURL"] = 2
+
+	mockHelper := mock_interfaces.NewMockHelper(ctrl)
+	service := services.NewWebScraper()
+
+	mockHelper.EXPECT().SearchElements(pageContent, "<title.*?>(.*)</title>").Return(searchElementResponse)
+	mockHelper.EXPECT().FindElementCount(pageContent, elementList).Return(elementCount).AnyTimes()
+	mockHelper.EXPECT().GetLinkCount(pageContent, url).Return(urlCount, getLinkErr).AnyTimes()
+
+	for _, test := range tests {
+		actual := service.Scrape(test.URL, mockHelper)
+		if test.expected.Error != actual.Error {
+			fmt.Printf("Expected : %v, Got : %v \n", expected.Error, actual.Error)
+			t.Fail()
+		}
+	}
+}
+
+func TestScrape_ErrorURL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	url := "https://www.w3schools.c"
+	expected := models.WebScraperResponse{Error: "Could not get the data from the requested URL, please check the URL"}
+
+	type test struct {
+		URL      string
+		expected models.WebScraperResponse
+	}
+
+	tests := []test{
+		{
+			URL:      url,
+			expected: expected,
+		},
+	}
+
+	mockHelper := mock_interfaces.NewMockHelper(ctrl)
 	service := services.NewWebScraper()
 
 	for _, test := range tests {
-		actual := service.SearchElements(test.pageContent, test.regex)
-		if test.expected != len(actual) {
-			fmt.Printf("Expected : %v, Got : %v ", expected, len(actual))
+		actual := service.Scrape(test.URL, mockHelper)
+		if test.expected.Error != actual.Error {
+			fmt.Printf("Expected : %v, Got : %v ", expected.Error, actual.Error)
 			t.Fail()
 		}
 	}
