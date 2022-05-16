@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/shashaneRanasinghe/WebScraper/router"
 	"github.com/shashaneRanasinghe/WebScraper/server"
 	"github.com/tryfix/log"
 )
@@ -11,5 +12,10 @@ func main() {
 	if err != nil {
 		log.Error("%v", err)
 	}
-	server.Serve()
+
+	r := router.NewRouter()
+	closeChannel := server.Serve(r)
+	<-closeChannel
+
+	log.Info("Service Stopped")
 }

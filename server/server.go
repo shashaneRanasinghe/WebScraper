@@ -1,27 +1,50 @@
 package server
 
 import (
+	"context"
+	"github.com/shashaneRanasinghe/WebScraper/interfaces"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/shashaneRanasinghe/WebScraper/handlers"
 	"github.com/tryfix/log"
 )
 
-// The Serve function creates the router and handles the requests
-func Serve() {
-	router := mux.NewRouter()
+// The Serve function creates the server
+func Serve(r interfaces.Router) chan string {
 
 	server := http.Server{
 		Addr:         ":8001",
-		Handler:      router,
-		ReadTimeout:  500 * time.Second,
-		WriteTimeout: 500 * time.Second,
+		Handler:      r.Route(),
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	}
 
-	router.HandleFunc("/scrape", handlers.Scrape).
-		Methods("GET")
+	closeChannel := make(chan string)
+
+	//This goroutine will make sure that the service is stopped gracefully
+	go func() {
+		sig := make(chan os.Signal)
+		signal.Notify(sig, os.Interrupt)
+		signal.Notify(sig, syscall.SIGTERM)
+		signal.Notify(sig, syscall.SIGQUIT)
+		<-sig
+
+		log.Info("service interruption received")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		err := server.Shutdown(ctx)
+		if err != nil {
+			log.Error("Server shutdown error : %v", err)
+		}
+
+		log.Info("HTTP server stopped")
+		close(closeChannel)
+	}()
 
 	log.Info("server is starting on port " + server.Addr)
 	err := server.ListenAndServe()
@@ -30,4 +53,6 @@ func Serve() {
 			log.Fatal(err)
 		}
 	}
+
+	return closeChannel
 }

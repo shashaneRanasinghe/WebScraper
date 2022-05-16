@@ -12,8 +12,56 @@ particular web page
 
 ### Testing
 run `go test ./...` to run the unit tests
-run `go tool cover -html=cover.out` to see the 
+run `go tool cover -html=c.out` to see the 
 coverage of the unit tests
 
 ## Endpoints
+This application has a single endpoint called scrape which
+will take an url as a query parameter 
+
+A request to the endpoint would look like this
+
+    curl --location --request GET 'http://localhost:8001/scrape?url=https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_input_type_password'
+
+The response would look like this
+
+    {
+    "data": {
+        "html_version": "HTML 5",
+        "title": "Tryit Editor v3.7",
+        "headers": {
+            "h1_Count": 1,
+            "h2_Count": 0,
+            "h3_Count": 0,
+            "h4_Count": 0,
+            "h5_Count": 0,
+            "h6_Count": 0
+        },
+        "links": {
+            "internal_links": 2,
+            "external_links": 0,
+            "inaccessible_links": 0
+        },
+        "has_login_form": true
+    },
+    "error": ""
+    }
+
+## Assumptions
+
+1. A login form can be detected by checking if an input
+   password field exists, since typically we would only use
+   a password input for a login.
+
+2. Internal links are links that are redirecting to the same
+   domain as the provided url
+
+3. External links are links that have a domain which is 
+    different from the domain of the provided url
+
+## Improvements
+
+1. Adding metrics and dashboards to check the health of the
+    application by using technologies such as prometheus and
+    grafana
 

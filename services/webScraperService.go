@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	HTMLVersion "github.com/lestoni/html-version"
 	"io"
 	"io/ioutil"
@@ -9,6 +8,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/shashaneRanasinghe/WebScraper/interfaces"
 	"github.com/shashaneRanasinghe/WebScraper/models"
@@ -65,7 +65,8 @@ func (w *WebScraper) Scrape(URL string) models.WebScraperResponse {
 	elementList := []string{"h1", "h2", "h3", "h4", "h5", "h6"}
 	elementCount := w.FindElementCount(pageContent, elementList)
 
-	links := w.GetLinkCount(pageContent, URL)
+	//links := w.GetLinkCount(pageContent, URL) //36 6 11 1m3.30sec
+	links := w.GetLinkCount(pageContent, URL) //36 6 11 14sec
 
 	logins := w.SearchElements(pageContent, "<input.*type=\"?(password)\"?")
 	hasLogin := false
@@ -97,9 +98,11 @@ func (w *WebScraper) Scrape(URL string) models.WebScraperResponse {
 		Error: "",
 	}
 
+	log.Debug(response)
 	return response
 }
 
+//TODO should these functions be methods of the Webscraper struct or should it be independent from the struct
 func (w *WebScraper) FindElementCount(pageContent string, elementList []string) map[string]int {
 
 	elementCount := make(map[string]int)
@@ -111,50 +114,12 @@ func (w *WebScraper) FindElementCount(pageContent string, elementList []string) 
 		if tags == nil {
 			elementCount[elem] = 0
 		} else {
-			for _ = range tags {
+			for range tags {
 				elementCount[elem] = elementCount[elem] + 1
 			}
 		}
 	}
 	return elementCount
-}
-
-func (w *WebScraper) GetLinkCount(pageContent string, currentURL string) map[string]int {
-	linkCountMap := make(map[string]int)
-
-	currentlink, err := url.Parse(currentURL)
-	if err != nil {
-		log.Error(err)
-	}
-
-	parts := strings.Split(currentlink.Hostname(), ".")
-	currentDomain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-
-	links := w.SearchElements(pageContent, "<a.*href=\"(.*?)\"")
-	for _, link := range links {
-		fmt.Println(link)
-		linkURL, err := url.Parse(link)
-		if err != nil {
-			log.Error(err)
-		}
-
-		parts = strings.Split(linkURL.Hostname(), ".")
-		if len(parts) < 2 {
-			continue
-		}
-		linkDomain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-
-		resp, err := http.Head(link)
-
-		if err != nil || resp.StatusCode != 200 {
-			linkCountMap["inaccessibleURL"] = linkCountMap["inaccessibleURL"] + 1
-		} else if linkDomain != currentDomain {
-			linkCountMap["externalURL"] = linkCountMap["externalURL"] + 1
-		} else {
-			linkCountMap["internalURL"] = linkCountMap["internalURL"] + 1
-		}
-	}
-	return linkCountMap
 }
 
 func (w *WebScraper) SearchElements(pageContent string, regex string) []string {
@@ -168,4 +133,55 @@ func (w *WebScraper) SearchElements(pageContent string, regex string) []string {
 	}
 
 	return elements
+}
+
+func (w *WebScraper) GetLinkCount(pageContent string, currentURL string) map[string]int {
+
+	linkCountMap := make(map[string]int)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	currentLink, err := url.Parse(currentURL)
+	if err != nil {
+		log.Error(err)
+	}
+
+	parts := strings.Split(currentLink.Hostname(), ".")
+	currentDomain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+
+	links := w.SearchElements(pageContent, "<a.*href=\"(.*?)\"")
+
+	for _, link := range links {
+		linkURL, err := url.Parse(link)
+		if err != nil {
+			log.Error(err)
+		}
+
+		parts = strings.Split(linkURL.Hostname(), ".")
+		if len(parts) < 2 {
+			continue
+		}
+		linkDomain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+
+		wg.Add(1)
+
+		go func(link string, linkDomain string, linkCountMap map[string]int) {
+
+			resp, err := http.Head(link)
+
+			mu.Lock()
+			if err != nil || resp.StatusCode != 200 {
+				linkCountMap["inaccessibleURL"] = linkCountMap["inaccessibleURL"] + 1
+			} else if linkDomain != currentDomain {
+				linkCountMap["externalURL"] = linkCountMap["externalURL"] + 1
+			} else {
+				linkCountMap["internalURL"] = linkCountMap["internalURL"] + 1
+			}
+			mu.Unlock()
+			wg.Done()
+		}(link, linkDomain, linkCountMap)
+	}
+	wg.Wait()
+
+	return linkCountMap
 }
