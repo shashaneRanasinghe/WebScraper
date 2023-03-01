@@ -11,9 +11,9 @@ particular web page
 - run `.\{binary name}` to run the binary (eg .\WebScraper)
 
 ### Testing
-- run `go test ./...` to run the unit tests
-- run `go test ./... -coverprofile=c.out` to create the cover profile
-- run `go tool cover -html=c.out` to see the 
+- run `go test -v ./...` to run the unit tests
+- run `go test -v ./... -coverprofile=c.out` to create the cover profile
+- run `go tool cover -html c` to see the 
 coverage of the unit tests
 
 ## Endpoints
