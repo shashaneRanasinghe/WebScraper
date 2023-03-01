@@ -1,9 +1,10 @@
-package helpers
+package helpers_test
 
 import (
 	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
+	"github.com/shashaneRanasinghe/WebScraper/helpers"
 	"github.com/tryfix/log"
 	"io/ioutil"
 	"net/http"
@@ -50,7 +51,7 @@ func TestFindElementCount(t *testing.T) {
 		},
 	}
 
-	helper := NewWebServiceHelper()
+	helper := helpers.NewWebServiceHelper()
 
 	for _, test := range tests {
 		actual := helper.FindElementCount(test.pageContent, test.elementList)
@@ -83,7 +84,7 @@ func TestGetLinkCount_HappyPath(t *testing.T) {
 		},
 	}
 
-	helper := NewWebServiceHelper()
+	helper := helpers.NewWebServiceHelper()
 
 	for _, test := range tests {
 		actual, err := helper.GetLinkCount(test.pageContent, test.URL)
@@ -119,7 +120,7 @@ func TestGetLinkCount_ErrorPath1(t *testing.T) {
 		},
 	}
 
-	helper := NewWebServiceHelper()
+	helper := helpers.NewWebServiceHelper()
 
 	for _, test := range tests {
 		_, actualErr := helper.GetLinkCount(test.pageContent, test.URL)
@@ -151,7 +152,7 @@ func TestSearchElements(t *testing.T) {
 		},
 	}
 
-	helper := NewWebServiceHelper()
+	helper := helpers.NewWebServiceHelper()
 
 	for _, test := range tests {
 		actual := helper.SearchElements(test.pageContent, test.regex)
