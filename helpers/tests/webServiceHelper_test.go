@@ -136,7 +136,7 @@ func TestSearchElements(t *testing.T) {
 	defer ctrl.Finish()
 
 	regex := "<title.*?>(.*)</title>"
-	expected := []string{"Tryit Editor v3.7"}
+	expected := []string{"W3Schools Tryit Editor"}
 
 	type test struct {
 		pageContent string
