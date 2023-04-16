@@ -64,7 +64,6 @@ func (w *webScraper) Scrape(URL string, h interfaces.Helper) models.WebScraperRe
 
 	links, err := h.GetLinkCount(pageContent, URL)
 	if err != nil {
-		log.Error(err)
 		return models.WebScraperResponse{
 			Data:  models.Data{},
 			Error: "Error while getting the Link Count",
