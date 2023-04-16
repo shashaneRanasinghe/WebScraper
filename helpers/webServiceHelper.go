@@ -46,7 +46,7 @@ func (w *webServiceHelper) SearchElements(pageContent string, regex string) []st
 	re := regexp.MustCompile(regex)
 	matches := re.FindAllStringSubmatch(pageContent, -1)
 
-	for i, _ := range matches {
+	for i := range matches {
 		elements = append(elements, matches[i][1])
 	}
 
@@ -62,6 +62,7 @@ func (w *webServiceHelper) GetLinkCount(pageContent string, currentURL string) (
 
 	currentLink, err := url.Parse(currentURL)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
