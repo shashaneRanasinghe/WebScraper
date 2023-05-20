@@ -214,7 +214,10 @@ func BenchmarkWebServiceHelper_GetLinkCount(b *testing.B) {
 	pageContent := getPageContent()
 
 	for i := 0; i < b.N; i++ {
-		helper.GetLinkCount(pageContent, url)
+		_, err := helper.GetLinkCount(pageContent, url)
+		if err != nil {
+			log.Error("Error getting the link count")
+		}
 	}
 }
 
