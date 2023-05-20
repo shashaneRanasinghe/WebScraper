@@ -5,6 +5,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/shashaneRanasinghe/WebScraper/helpers"
 	"github.com/tryfix/log"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -16,7 +17,12 @@ func getPageContent() string {
 	if err != nil {
 		log.Error(err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error("Error when closing ReadCloser")
+		}
+	}(resp.Body)
 
 	dataInBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
