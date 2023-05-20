@@ -8,7 +8,6 @@ import (
 	"github.com/shashaneRanasinghe/WebScraper/models"
 	"github.com/shashaneRanasinghe/WebScraper/services"
 	"github.com/tryfix/log"
-	"io/ioutil"
 	"net/http"
 	"testing"
 )
@@ -21,7 +20,7 @@ func getPageContent() string {
 	}
 	defer resp.Body.Close()
 
-	dataInBytes, err := ioutil.ReadAll(resp.Body)
+	dataInBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 	}

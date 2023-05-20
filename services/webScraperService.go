@@ -6,7 +6,6 @@ import (
 	"github.com/shashaneRanasinghe/WebScraper/models"
 	"github.com/tryfix/log"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -17,8 +16,8 @@ func NewWebScraper() interfaces.WebScraper {
 	return &webScraper{}
 }
 
-//The Scrape function get the content of the webpage of the url and
-//create the webScraper response
+// The Scrape function get the content of the webpage of the url and
+// create the webScraper response
 func (w *webScraper) Scrape(URL string, h interfaces.Helper) models.WebScraperResponse {
 
 	resp, err := http.Get(URL)
@@ -37,7 +36,7 @@ func (w *webScraper) Scrape(URL string, h interfaces.Helper) models.WebScraperRe
 		}
 	}(resp.Body)
 
-	dataInBytes, err := ioutil.ReadAll(resp.Body)
+	dataInBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 		return models.WebScraperResponse{
