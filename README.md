@@ -60,9 +60,3 @@ The response would look like this
 3. External links are links that have a domain which is 
     different from the domain of the provided url
 
-## Improvements
-
-1. Adding metrics and dashboards to check the health of the
-    application by using technologies such as prometheus and
-    grafana
-
